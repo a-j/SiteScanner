@@ -2,11 +2,13 @@ package aj.sitescanner;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.impl.client.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
@@ -26,7 +28,7 @@ public class SiteScanner {
         LOGGER.info("Begin processing....");
         CloseableHttpClient httpClient = HttpClientBuilder.create().disableRedirectHandling().build();
         try {
-            BufferedReader reader = new BufferedReader(new FileReader("data/UHC_Domains.txt"));
+            BufferedReader reader = new BufferedReader(new FileReader("data/UHC_Domains.csv"));
 
             String str;
             while ((str = reader.readLine()) != null) {
@@ -47,10 +49,16 @@ public class SiteScanner {
                         } else if (statusCode >= 301 && statusCode < 400) {
                             URI targetURI = new URI(response.getFirstHeader("Location").getValue());
                             LOGGER.info("Location: {}", targetURI.toASCIIString());
-                            if ("/".equals(targetURI.toASCIIString())) {
+                            if (targetURI.toASCIIString().startsWith("/")) {
+                                inputUri = new URI(inputUri.getScheme() + "://" + inputUri.getHost() + targetURI.toASCIIString());
+                                httpGet = new HttpGet(inputUri);
+                                continue;
+                            } else if (!targetURI.toASCIIString().startsWith("http")) {
+                                inputUri = new URI(inputUri.getScheme() + "://" + inputUri.getHost() + "/" + targetURI.toASCIIString());
+                                httpGet = new HttpGet(inputUri);
                                 continue;
                             }
-                            if (targetURI.getHost().equalsIgnoreCase(inputUri.getHost())) {
+                            if (inputUri.getHost().equalsIgnoreCase(targetURI.getHost())) {
                                 // Only protocol has changed - ignore
                                 active.add(inputUri.toASCIIString());
                             } else {
@@ -63,6 +71,14 @@ public class SiteScanner {
                         }
                     } catch (UnknownHostException uhe) {
                         LOGGER.error("UnknownHostException Occurred");
+                        unreachable.add(inputUri.toASCIIString());
+                        break;
+                    } catch (HttpHostConnectException ce) {
+                        LOGGER.error("HttpHostConnectException Occurred");
+                        unreachable.add(inputUri.toASCIIString());
+                        break;
+                    } catch (SocketException se) {
+                        LOGGER.error("SocketException Occurred");
                         unreachable.add(inputUri.toASCIIString());
                         break;
                     } finally {
