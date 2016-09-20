@@ -29,7 +29,7 @@ public class MultiThreadedSiteScanner {
 
         ExecutorService executor = Executors.newFixedThreadPool(100);
         try {
-            BufferedReader reader = new BufferedReader(new FileReader("data/UHC_Domains.txt"));
+            BufferedReader reader = new BufferedReader(new FileReader("data/UHC_Domains.csv"));
 
             String str;
             while ((str = reader.readLine()) != null) {
