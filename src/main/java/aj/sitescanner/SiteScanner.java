@@ -26,9 +26,10 @@ public class SiteScanner {
 
     public static void main( String[] args ) {
         LOGGER.info("Begin processing....");
+        final long startTime = System.currentTimeMillis();
         CloseableHttpClient httpClient = HttpClientBuilder.create().disableRedirectHandling().build();
         try {
-            BufferedReader reader = new BufferedReader(new FileReader("data/UHC_Domains.csv"));
+            BufferedReader reader = new BufferedReader(new FileReader("data/input.txt"));
 
             String str;
             while ((str = reader.readLine()) != null) {
@@ -113,6 +114,9 @@ public class SiteScanner {
             }
             writer.flush();
             writer.close();
+            final long endTime = System.currentTimeMillis();
+            LOGGER.info("Elapsed Time (in seconds): {}", (endTime - startTime)/1000);
+
         } catch (IOException ioe) {
             LOGGER.error("IOException occurred", ioe);
         } catch (URISyntaxException use) {
